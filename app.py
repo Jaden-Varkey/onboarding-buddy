@@ -15,14 +15,23 @@ def get_conn():
     return snow.connect()
 
 
+def _merge_by_source(hits):
+    """One numbered source per file/issue, so citations and the Sources list don't repeat."""
+    merged = {}
+    for h in hits:
+        m = merged.setdefault(h["SOURCE_PATH"], {**h, "CONTENT": ""})
+        m["CONTENT"] = f"{m['CONTENT']}\n…\n{h['CONTENT']}" if m["CONTENT"] else h["CONTENT"]
+    return list(merged.values())
+
+
 def retrieve(conn, repo, query, limit=8):
     try:
         hits = snow.search(conn, repo, query, limit)
         if hits:
-            return hits, "Cortex Search"
+            return _merge_by_source(hits), "Cortex Search"
     except Exception:  # index still building or service missing
         pass
-    return snow.keyword_search(conn, repo, query, limit), "keyword fallback"
+    return _merge_by_source(snow.keyword_search(conn, repo, query, limit)), "keyword fallback"
 
 
 def build_checklist(conn, repo, info):
@@ -30,8 +39,9 @@ def build_checklist(conn, repo, info):
     context = "\n\n".join(h["CONTENT"] for h in hits)
     prompt = (
         f"From the documentation of the GitHub repo {repo} below, write a getting-started checklist for a new "
-        "contributor: 5 to 7 short imperative steps (max 12 words each), in order, from cloning to opening a "
-        "first pull request. Output ONLY a JSON array of strings.\n\n" + context
+        "contributor: 5 to 7 imperative steps (6-14 words each), in order, from cloning to opening a first pull "
+        "request. Be specific to THIS repo: name the actual tools and commands from the docs (e.g. `pip install -e .`). "
+        "Output ONLY a JSON array of strings.\n\n" + context
     )
     raw = snow.complete(conn, prompt)
     m = re.search(r"\[.*\]", raw, re.S)
@@ -58,7 +68,7 @@ Rules:
 - Cite sources inline like [1] or [2][3] right after the facts they support.
 - If the sources don't contain the answer, say so plainly and name the most relevant file to read.
 - Be concise: short numbered steps, and put shell commands in code blocks.
-- When asked what to work on, recommend 1-3 unassigned issues from the list, with links, and say why each suits a beginner.
+- Only if the question asks what to work on: recommend 1-3 unassigned issues from the good-first-issues list as markdown links like [#123 Title](url), and say why each suits a beginner. Don't cite numbered sources for issues from that list. Otherwise don't mention the list.
 
 Open good first issues:
 {issues}

@@ -72,10 +72,18 @@ def repo_info(repo: str) -> dict:
 def _pick_doc_paths(repo: str, branch: str) -> list[str]:
     tree = _get(f"/repos/{repo}/git/trees/{branch}", recursive=1).get("tree", [])
     paths = [t["path"] for t in tree if t["type"] == "blob" and t.get("size", 0) < 400_000]
-    picked = [p for p in paths if DOC_NAME.search(p) and p.count("/") <= 2]
-    picked += [p for p in paths if DOC_DIR.match(p) and p not in picked]
-    # Top-level files and short paths first: they are usually the onboarding entry points
-    picked.sort(key=lambda p: (p.count("/"), not DOC_NAME.search(p), len(p)))
+    def priority(p):
+        in_docs, named = bool(DOC_DIR.match(p)), bool(DOC_NAME.search(p))
+        if "/" not in p and named:
+            return 0  # top-level README / CONTRIBUTING
+        if in_docs and named:
+            return 1  # docs/**/contributing.rst, docs/**/installation.md
+        if in_docs:
+            return 2
+        return 3  # nested READMEs in examples/, packages/, …
+
+    picked = [p for p in paths if DOC_DIR.match(p) or (DOC_NAME.search(p) and p.count("/") <= 2)]
+    picked.sort(key=lambda p: (priority(p), p.count("/"), len(p)))
     return picked[:MAX_DOC_FILES]
 
 

@@ -111,10 +111,17 @@ def keyword_search(conn, repo: str, query: str, limit: int = 8) -> list[dict]:
 
 def complete(conn, prompt: str, model: str = MODEL) -> str:
     try:
-        return _one(conn, "SELECT AI_COMPLETE(%s, %s)", (model, prompt)) or ""
+        out = _one(conn, "SELECT AI_COMPLETE(%s, %s)", (model, prompt)) or ""
     except snowflake.connector.Error:
         # Older accounts without AI_COMPLETE
-        return _one(conn, "SELECT SNOWFLAKE.CORTEX.COMPLETE(%s, %s)", (model, prompt)) or ""
+        out = _one(conn, "SELECT SNOWFLAKE.CORTEX.COMPLETE(%s, %s)", (model, prompt)) or ""
+    # AI_COMPLETE returns a JSON-encoded string ("...")
+    if out.startswith('"'):
+        try:
+            out = json.loads(out)
+        except json.JSONDecodeError:
+            pass
+    return out
 
 
 def _health_sql() -> str:
