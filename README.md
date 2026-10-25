@@ -73,4 +73,19 @@ DROP USER IF EXISTS OB_APP;
 In keeping with the MLH rules on AI tools: this project was built with help from **Claude Code** (code generation and pair programming) and **Snowflake CoCo** (Snowflake data exploration, SQL and Cortex Search setup).
 
 ## License
-[MIT](LICENSE)
+Onboarding Buddy's own code is released under the [MIT License](LICENSE).
+
+### Third-party licenses
+| Component | Used for | License |
+|---|---|---|
+| [Meta Llama 3.3 70B](https://www.llama.com/llama3_3/) (via Snowflake Cortex) | Answers and checklist | [Llama 3.3 Community License](https://www.llama.com/llama3_3/license/) ([Acceptable Use Policy](https://www.llama.com/llama3_3/use-policy/)) |
+| [Snowflake Arctic Embed M v1.5](https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v1.5) (via Cortex Search) | Retrieval embeddings | Apache-2.0 |
+| [Streamlit](https://github.com/streamlit/streamlit) | UI | Apache-2.0 |
+| [snowflake-connector-python](https://github.com/snowflakedb/snowflake-connector-python) | Snowflake access | Apache-2.0 |
+| [Requests](https://github.com/psf/requests) | GitHub API | Apache-2.0 |
+| [cryptography](https://github.com/pyca/cryptography) | Key-pair auth | Apache-2.0 / BSD-3-Clause |
+| [python-dotenv](https://github.com/theskumar/python-dotenv) | Config | BSD-3-Clause |
+
+**Data:** GitHub Archive via *Snowflake Public Data (Free)* on the Snowflake Marketplace, used under the listing's terms on the Snowflake Marketplace; no dataset contents are redistributed in this repo. Repo content shown in the app is fetched live from the public GitHub API and remains under each repository's own license.
+
+**Built with Llama.**

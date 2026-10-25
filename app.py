@@ -148,7 +148,7 @@ with st.sidebar:
                 cols[i % 2].metric(k.replace("_", " ").title(), "—" if v is None else str(v))
 
     st.divider()
-    st.caption(f"Powered by Snowflake Cortex Search + Cortex AI ({snow.MODEL}, open-weight)")
+    st.caption(f"Powered by Snowflake Cortex Search + Cortex AI ({snow.MODEL}, open-weight) · Built with Llama")
 
 # ---------------- Main ----------------
 if "repo" not in st.session_state:
