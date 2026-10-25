@@ -27,7 +27,7 @@ SEARCH_PREVIEW(query, filter REPO)      → top chunks
    ▼
 Answer with [1][2] citations  ·  checklist  ·  good first issues
                                          ▲
-GH.PUBLIC_DATA.GITHUB_EVENTS / _STARS ───┘ repo health (Snowflake Marketplace, written with CoCo)
+SNOWFLAKE_CURATED_DATA_FREE.PUBLIC_DATA_FREE.GITHUB_* ───┘ repo health (Snowflake Marketplace, written with CoCo)
 ```
 
 All retrieval, generation and analytics run **inside Snowflake**. Streamlit is just the UI.
@@ -43,13 +43,13 @@ The model is configurable with `OB_MODEL` (other open-weight options on Cortex: 
 
 ## Snowflake features used
 - **Snowflake CoCo (Cortex Code CLI):** explored the GitHub Archive Marketplace dataset, wrote and tuned `sql/repo_health.sql`, reviewed and created the Cortex Search service (`sql/search_service.sql`), and tested which open-weight models are available. See *Built with CoCo* below.
-- **Snowflake Marketplace:** *Snowflake Public Data (Free)* → GitHub Archive (`GITHUB_EVENTS`, `GITHUB_REPOS`, `GITHUB_STARS`)
+- **Snowflake Marketplace:** *Snowflake Public Data (Free)* (database `SNOWFLAKE_CURATED_DATA_FREE`) → GitHub Archive (`GITHUB_EVENTS`, `GITHUB_REPOS`, `GITHUB_STARS`)
 - **Cortex Search:** retrieval with a `REPO` attribute filter
 - **Cortex AI `AI_COMPLETE`:** generation with an open-weight model
 
 ## Built with CoCo
 <!-- Screenshots of the CoCo sessions go here -->
-- Prompt A: explored `GH.PUBLIC_DATA` and wrote the repo-health query
+- Prompt A: explored `SNOWFLAKE_CURATED_DATA_FREE.PUBLIC_DATA_FREE` and wrote the repo-health query
 - Prompt B: reviewed and ran `sql/search_service.sql`
 - Prompt C: tested open-weight models with `AI_COMPLETE`
 
@@ -61,7 +61,7 @@ cp .env.example .env    # fill in SNOWFLAKE_ACCOUNT, key file path
 .venv/Scripts/streamlit run app.py
 ```
 
-Snowflake setup: run `sql/account_setup.sql` (warehouse, database, key-pair service user), get *Snowflake Public Data (Free)* from the Marketplace as database `GH`, then run `sql/search_service.sql`.
+Snowflake setup: run `sql/account_setup.sql` (warehouse, database, key-pair service user), get *Snowflake Public Data (Free)* from the Marketplace (database `SNOWFLAKE_CURATED_DATA_FREE`), then run `sql/search_service.sql`.
 
 **Teardown** (to stop spending credits):
 ```sql

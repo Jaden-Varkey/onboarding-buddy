@@ -1,6 +1,7 @@
 """Onboarding Buddy: chat with any GitHub repo's docs and issues, powered by Snowflake Cortex."""
 import json
 import re
+from concurrent.futures import ThreadPoolExecutor
 
 import streamlit as st
 
@@ -83,9 +84,21 @@ Question: {question}
 Answer:"""
 
 
+def _health_in_background(repo):
+    conn = snow.connect()  # own connection: runs in a worker thread
+    try:
+        return snow.repo_health(conn, repo)
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        conn.close()
+
+
 def load(repo_input):
     conn = get_conn()
     repo = gh.parse_repo(repo_input)
+    # The GitHub Archive query is the slowest step, so start it first
+    health_job = ThreadPoolExecutor(max_workers=1).submit(_health_in_background, repo)
     with st.status(f"Loading {repo}…", expanded=True) as status:
         st.write("Fetching README, docs, contributing guide and closed issues from GitHub…")
         info, rows = gh.fetch_repo(repo)
@@ -101,10 +114,8 @@ def load(repo_input):
         first_issues = gh.fetch_good_first_issues(repo)
         st.write("Writing your getting-started checklist with Cortex AI…")
         checklist = build_checklist(conn, repo, info)
-        try:
-            health = snow.repo_health(conn, repo)
-        except Exception as e:
-            health = {"error": str(e)}
+        st.write("Crunching repo health from the GitHub Archive (Snowflake Marketplace)…")
+        health = health_job.result()
         status.update(label=f"{repo} is ready", state="complete", expanded=False)
     st.session_state.update(repo=repo, info=info, first_issues=first_issues, checklist=checklist,
                             health=health, messages=[])
@@ -125,7 +136,7 @@ with st.sidebar:
         info = st.session_state.info
         st.markdown(f"**[{info['full_name']}]({info['html_url']})**  \n{info['description']}")
         st.subheader("Repo health")
-        st.caption("GitHub Archive · Snowflake Marketplace")
+        st.caption("GitHub Archive · Snowflake Marketplace (free tier lags a few months)")
         health = st.session_state.health
         if not health:
             st.info("Repo health query not set up yet (sql/repo_health.sql).")
