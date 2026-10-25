@@ -2,6 +2,8 @@
 
 **Chat with any GitHub repo's docs and issues, with every answer cited. Built on Snowflake.**
 
+![Onboarding Buddy demo: load jupyterlab, ask how to set up a dev environment, get cited steps and good first issues](docs/demo.gif)
+
 New contributors lose hours digging through scattered READMEs, docs and old issues just to get set up, and maintainers answer the same questions again and again. Paste a repo URL into Onboarding Buddy and it:
 
 1. **Loads** the README, contributing guide, `docs/` and the most-discussed closed issues into a **Snowflake** table

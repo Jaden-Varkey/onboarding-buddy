@@ -180,13 +180,15 @@ with side_col:
 
 with chat_col:
     st.subheader(f"Ask about {repo}")
-    for m in st.session_state.messages:
-        with st.chat_message(m["role"]):
-            st.markdown(m["content"])
-            if m.get("sources"):
-                with st.expander("Sources"):
-                    for line in m["sources"]:
-                        st.markdown(line)
+    history = st.container()  # keeps old and new messages above the question box
+    with history:
+        for m in st.session_state.messages:
+            with st.chat_message(m["role"]):
+                st.markdown(m["content"])
+                if m.get("sources"):
+                    with st.expander("Sources"):
+                        for line in m["sources"]:
+                            st.markdown(line)
 
     examples = ["How do I set up a dev environment?", "How do I run the tests?",
                 "Which good first issue should I pick?"]
@@ -200,18 +202,19 @@ with chat_col:
 
     if question:
         st.session_state.messages.append({"role": "user", "content": question})
-        with st.chat_message("user"):
-            st.markdown(question)
-        with st.chat_message("assistant"):
-            with st.spinner("Searching docs with Cortex Search and thinking…"):
-                conn = get_conn()
-                hits, method = retrieve(conn, repo, question)
-                prompt = build_prompt(repo, info, question, hits, st.session_state.first_issues,
-                                      st.session_state.messages[:-1])
-                answer = snow.complete(conn, prompt).strip()
-            st.markdown(answer)
-            sources = [f"[{i}] [{h['SOURCE_PATH']}]({h['URL']})" for i, h in enumerate(hits, 1)]
-            with st.expander(f"Sources ({method})"):
-                for line in sources:
-                    st.markdown(line)
+        with history:
+            with st.chat_message("user"):
+                st.markdown(question)
+            with st.chat_message("assistant"):
+                with st.spinner("Searching docs with Cortex Search and thinking…"):
+                    conn = get_conn()
+                    hits, method = retrieve(conn, repo, question)
+                    prompt = build_prompt(repo, info, question, hits, st.session_state.first_issues,
+                                          st.session_state.messages[:-1])
+                    answer = snow.complete(conn, prompt).strip()
+                st.markdown(answer)
+                sources = [f"[{i}] [{h['SOURCE_PATH']}]({h['URL']})" for i, h in enumerate(hits, 1)]
+                with st.expander(f"Sources ({method})"):
+                    for line in sources:
+                        st.markdown(line)
         st.session_state.messages.append({"role": "assistant", "content": answer, "sources": sources})
