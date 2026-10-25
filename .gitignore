@@ -4,3 +4,4 @@ __pycache__/
 *.p8
 *.pem
 YOUR_STEPS.md
+.vercel/
