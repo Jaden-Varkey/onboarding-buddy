@@ -88,15 +88,41 @@ def refresh_search(conn, repo: str, timeout_s: int = 120) -> bool:
 
 
 def search(conn, repo: str, query: str, limit: int = 8) -> list[dict]:
-    payload = json.dumps({
-        "query": query,
-        "columns": ["CONTENT", "SOURCE_PATH", "URL", "SOURCE_TYPE"],
-        "filter": {"@eq": {"REPO": repo}},
-        "limit": limit,
-    })
-    raw = _one(conn, "SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(%s, %s)", (SEARCH_SERVICE, payload))
+    columns = ["CONTENT", "SOURCE_PATH", "URL", "SOURCE_TYPE", "CHUNK_ID"]
+    try:
+        raw = _search_raw(conn, repo, query, limit, columns)
+    except snowflake.connector.Error:
+        raw = _search_raw(conn, repo, query, limit, columns[:-1])  # service built before CHUNK_ID was added
     results = json.loads(raw).get("results", []) if raw else []
     return [{k.upper(): v for k, v in r.items()} for r in results]
+
+
+def _search_raw(conn, repo, query, limit, columns):
+    payload = json.dumps({"query": query, "columns": columns, "filter": {"@eq": {"REPO": repo}}, "limit": limit})
+    return _one(conn, "SELECT SNOWFLAKE.CORTEX.SEARCH_PREVIEW(%s, %s)", (SEARCH_SERVICE, payload))
+
+
+def with_neighbors(conn, repo: str, hits: list[dict], top: int = 4) -> list[dict]:
+    """Replace each top hit's text with chunks N-1..N+1 of the same file, so split sections stay whole."""
+    keys = [(h["SOURCE_PATH"], int(h["CHUNK_ID"])) for h in hits[:top] if h.get("CHUNK_ID") is not None]
+    if not keys:
+        return hits
+    where = " OR ".join(["(SOURCE_PATH = %s AND CHUNK_ID BETWEEN %s AND %s)"] * len(keys))
+    params = [repo] + [v for path, cid in keys for v in (path, cid - 1, cid + 1)]
+    with conn.cursor(snowflake.connector.DictCursor) as cur:
+        cur.execute(f"SELECT SOURCE_PATH, CHUNK_ID, CONTENT FROM {TABLE} WHERE REPO = %s AND ({where}) "
+                    "ORDER BY SOURCE_PATH, CHUNK_ID", params)
+        rows = cur.fetchall()
+    by_key = {(r["SOURCE_PATH"], r["CHUNK_ID"]): r["CONTENT"] for r in rows}
+    expand = set(keys)
+    out = []
+    for h in hits:
+        if h.get("CHUNK_ID") is not None and (h["SOURCE_PATH"], int(h["CHUNK_ID"])) in expand:
+            cid = int(h["CHUNK_ID"])
+            parts = [by_key[(h["SOURCE_PATH"], i)] for i in (cid - 1, cid, cid + 1) if (h["SOURCE_PATH"], i) in by_key]
+            h = {**h, "CONTENT": "\n".join(parts) or h["CONTENT"]}
+        out.append(h)
+    return out
 
 
 def keyword_search(conn, repo: str, query: str, limit: int = 8) -> list[dict]:

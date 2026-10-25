@@ -18,10 +18,14 @@ def get_conn():
 
 def _merge_by_source(hits):
     """One numbered source per file/issue, so citations and the Sources list don't repeat."""
-    merged = {}
+    merged, seen = {}, set()
     for h in hits:
         m = merged.setdefault(h["SOURCE_PATH"], {**h, "CONTENT": ""})
-        m["CONTENT"] = f"{m['CONTENT']}\n…\n{h['CONTENT']}" if m["CONTENT"] else h["CONTENT"]
+        # Neighbour expansion can make adjacent hits overlap; keep each paragraph once
+        new = [p for p in h["CONTENT"].split("\n") if p.strip() and (h["SOURCE_PATH"], p) not in seen]
+        seen.update((h["SOURCE_PATH"], p) for p in new)
+        if new:
+            m["CONTENT"] = f"{m['CONTENT']}\n…\n" + "\n".join(new) if m["CONTENT"] else "\n".join(new)
     return list(merged.values())
 
 
@@ -29,7 +33,7 @@ def retrieve(conn, repo, query, limit=8):
     try:
         hits = snow.search(conn, repo, query, limit)
         if hits:
-            return _merge_by_source(hits), "Cortex Search"
+            return _merge_by_source(snow.with_neighbors(conn, repo, hits)), "Cortex Search"
     except Exception:  # index still building or service missing
         pass
     return _merge_by_source(snow.keyword_search(conn, repo, query, limit)), "keyword fallback"

@@ -48,10 +48,17 @@ The model is configurable with `OB_MODEL` (other open-weight options on Cortex: 
 - **Cortex AI `AI_COMPLETE`:** generation with an open-weight model
 
 ## Built with CoCo
-<!-- Screenshots of the CoCo sessions go here -->
-- Prompt A: explored `SNOWFLAKE_CURATED_DATA_FREE.PUBLIC_DATA_FREE` and wrote the repo-health query
-- Prompt B: reviewed and ran `sql/search_service.sql`
-- Prompt C: tested open-weight models with `AI_COMPLETE`
+Snowflake CoCo (Cortex Code CLI) did the Snowflake data work:
+
+**Prompt A: explore the GitHub Archive and write the repo-health query.** CoCo mapped the `SNOWFLAKE_CURATED_DATA_FREE.PUBLIC_DATA_FREE` views and found the free tier's data lag (events end about 3 months back). It then rewrote our draft into [`sql/repo_health.sql`](sql/repo_health.sql) using `MAX_BY` for REPO_ID pruning and one pass per view. Same results, **23.2 s → 11.0 s** on an X-Small warehouse.
+
+![CoCo runs the baseline repo-health query](docs/coco/prompt-a-1-baseline-health-query.png)
+![CoCo tests partition pruning](docs/coco/prompt-a-2-pruning-optimization.png)
+![CoCo saves the optimized query](docs/coco/prompt-a-3-saved-optimized-query.png)
+
+**Prompt B: review the Cortex Search service.** CoCo explained [`sql/search_service.sql`](sql/search_service.sql), inspected the live index (192 chunks, `snowflake-arctic-embed-m-v1.5`, incremental refresh) and ran a test search. It found that setup steps were split across neighbouring chunks and suggested returning `CHUNK_ID` so the app can stitch chunks N-1..N+1 back together. That's now in `snow.with_neighbors()`.
+
+![CoCo reviews the Cortex Search service](docs/coco/prompt-b-search-service-review.png)
 
 ## Run it
 

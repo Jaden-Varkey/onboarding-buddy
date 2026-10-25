@@ -1,6 +1,6 @@
 -- Hand-written fallback; the app prefers sql/repo_health.sql (written with CoCo).
 -- SNOWFLAKE_CURATED_DATA_FREE = database created by getting "Snowflake Public Data (Free)" from the Marketplace.
--- The free tier lags (events ~3 months, stars ~3 weeks), so windows are wide.
+-- The free tier lags (events ~3 months; stars and repos ~1 day), so the event window is wide.
 WITH rid AS (
     SELECT REPO_ID FROM SNOWFLAKE_CURATED_DATA_FREE.PUBLIC_DATA_FREE.GITHUB_REPOS
     WHERE REPO_NAME = $REPO_NAME
