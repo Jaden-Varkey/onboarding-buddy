@@ -60,6 +60,10 @@ Snowflake CoCo (Cortex Code CLI) did the Snowflake data work:
 
 ![CoCo reviews the Cortex Search service](docs/coco/prompt-b-search-service-review.png)
 
+**Prompt C: check which open-weight models are available.** CoCo tested `AI_COMPLETE` with `llama3.3-70b`, `mistral-large3`, `qwen3-32b` and `llama3.1-8b`, and all four work in the account. The app defaults to `llama3.3-70b`.
+
+![CoCo tests open-weight models with AI_COMPLETE](docs/coco/prompt-c-open-weight-models.png)
+
 ## Run it
 
 ```bash
