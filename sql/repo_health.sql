@@ -1,0 +1,2 @@
+-- TODO: CoCo writes this query (YOUR_STEPS.md, Step 6, Prompt A).
+-- It must reference the repo only via $REPO_NAME and return one row.

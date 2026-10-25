@@ -1,0 +1,26 @@
+-- Onboarding Buddy: storage + Cortex Search index for repo docs and closed issues.
+USE ROLE ACCOUNTADMIN;
+USE WAREHOUSE ONBOARDING_WH;
+
+CREATE TABLE IF NOT EXISTS ONBOARDING_BUDDY.APP.REPO_DOCS (
+    REPO        STRING,   -- 'owner/name'
+    SOURCE_TYPE STRING,   -- 'doc' or 'issue'
+    SOURCE_PATH STRING,   -- file path or 'issue #123'
+    URL         STRING,   -- link shown as a citation
+    CHUNK_ID    INT,
+    CONTENT     STRING,
+    LOADED_AT   TIMESTAMP_LTZ DEFAULT CURRENT_TIMESTAMP()
+) CHANGE_TRACKING = TRUE;
+
+-- Hybrid (vector + keyword) search over every chunk; REPO is a filterable attribute
+CREATE CORTEX SEARCH SERVICE IF NOT EXISTS ONBOARDING_BUDDY.APP.REPO_DOCS_SEARCH
+  ON CONTENT
+  ATTRIBUTES REPO, SOURCE_TYPE
+  WAREHOUSE = ONBOARDING_WH
+  TARGET_LAG = '1 minute'
+  AS (
+    SELECT CONTENT, REPO, SOURCE_TYPE, SOURCE_PATH, URL
+    FROM ONBOARDING_BUDDY.APP.REPO_DOCS
+  );
+
+SHOW CORTEX SEARCH SERVICES IN SCHEMA ONBOARDING_BUDDY.APP;
